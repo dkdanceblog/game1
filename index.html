@@ -69,6 +69,12 @@ const IS_MOBILE = (window.matchMedia && window.matchMedia('(pointer: coarse)').m
 const OBSTACLE_SPEED = IS_MOBILE ? 1.0 : 3.0;   // скорость полёта слов (px/кадр)
 const SPAWN_EVERY    = IS_MOBILE ? 180  : 90;   // период спавна (в кадрах)
 
+// TIME-BASED SIM (normalize to 60fps)
+let lastTs = 0;
+let dtFrames = 1; // how many 60fps-frames passed since last frame
+let spawnAcc = 0;
+let scoreAcc = 0;
+
 // --- Audio (очень мягкие) ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playBeep(freq=440, duration=0.15, type="sine", vol=0.05){
@@ -216,7 +222,11 @@ function checkCollision(){ for(const o of obstacles){ const w=ctx.measureText(o.
     showGameOver(`Твоя карьера наткнулась на ${acc}`, funny[o.word]); sfxHit(); return true; } } return false; }
 
 // --- Цикл ---
-function loop(){ if(gameOver) return; ctx.clearRect(0,0,cvs.width,cvs.height); ctx.save();
+function loop(ts){
+  if (!lastTs) lastTs = ts;
+  dtFrames = Math.max(0.1, Math.min(3, (ts - lastTs) / 16.6667));
+  lastTs = ts;
+ if(gameOver) return; ctx.clearRect(0,0,cvs.width,cvs.height); ctx.save();
   // лёгкий фон
   drawNotesLight();
 
