@@ -26,16 +26,13 @@
     #line1{font-size:clamp(16px,4.5vw,22px);margin:8px 0;line-height:1.25;word-break:break-word}
     #line2{font-size:clamp(14px,4vw,20px);margin:8px 0 0;opacity:.95;line-height:1.25;word-break:break-word}
     #hint{margin-top:14px;font-size:clamp(12px,3.8vw,18px);opacity:.85}
-
     @keyframes fadeUp{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
   </style>
 </head>
 <body>
   <div id="hud">Слушатели: <span id="score">0</span></div>
-  <!-- портретный канвас -->
   <canvas id="game" width="600" height="900"></canvas>
 
-  <!-- оверлей конца игры -->
   <div id="overlay">
     <div id="card">
       <div id="title">Карьера окончена</div>
@@ -50,9 +47,12 @@
 const IS_MOBILE = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
   || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-const OBSTACLE_SPEED = IS_MOBILE ? 1.0 : 3.0;   // скорость слов (px за 60fps-кадр)
-const SPAWN_EVERY    = IS_MOBILE ? 180 : 90;    // период появления (в "кадрах 60fps")
-const SCORE_TICK_MS  = IS_MOBILE ? 30  : 33;    // шаг счёта (~33/сек пк, ~33+/сек моб)
+/* ——— ТОЛЬКО ЭТО ПРАВИЛ ——— */
+const OBSTACLE_SPEED = IS_MOBILE ? 1.7 : 3.0;   // было 1.0 → стало быстрее
+const SPAWN_EVERY    = IS_MOBILE ? 150 : 90;    // было 180 → спавним чаще
+/* ———————————————————————— */
+
+const SCORE_TICK_MS  = IS_MOBILE ? 30  : 33;
 const WIN_SCORE = 5000;
 
 /* ===================== канвас ===================== */
@@ -63,12 +63,6 @@ const overlay = document.getElementById('overlay');
 const titleEl  = document.getElementById('title');
 const line1El  = document.getElementById('line1');
 const line2El  = document.getElementById('line2');
-
-function resizeCanvasToDisplaySize() {
-  // уже растянут по CSS на высоту экрана — просто держим DPI браузера
-  // (ничего не меняем, чтобы не ломать пропорции и события)
-}
-window.addEventListener('resize', resizeCanvasToDisplaySize);
 
 /* ===================== звук (ленивый) ===================== */
 let audioCtx=null;
@@ -105,10 +99,9 @@ const colors = {
 // базовые параметры игрока
 const BASE_GRAVITY = 0.60;
 const BASE_JUMP    = -12.0;
-// мобильная подстройка (чуть легче падение и сильнее прыжок)
 const P_GRAVITY = IS_MOBILE ? BASE_GRAVITY * 0.80 : BASE_GRAVITY;
 const P_JUMP    = IS_MOBILE ? BASE_JUMP    * 1.10 : BASE_JUMP;
-const MAX_FALL  = IS_MOBILE ? 8 : 12; // предел скорости падения (в ед/60fps-кадр)
+const MAX_FALL  = IS_MOBILE ? 8 : 12;
 
 const player = { x:60, y:250, w:40, h:60, vy:0, gravity:P_GRAVITY, jump:P_JUMP };
 
@@ -116,7 +109,6 @@ let obstacles=[], score=0, gameOver=false, frame=0;
 let lastTs=0, dtFrames=1, dtMs=0, scoreAcc=0;
 
 function drawNotes(){
-  // лёгкий фон: пары нот в разных местах (статичный, без тяжёлой анимации)
   ctx.save(); ctx.globalAlpha = .25; ctx.font="26px Arial"; ctx.textAlign='center'; ctx.textBaseline='middle';
   for(let i=0;i<18;i++){
     const x=(i*37)%cvs.width, y=(i*97)%cvs.height, emoji=(i%2? "🎵":"🎶");
@@ -136,12 +128,15 @@ function spawnObstacle(){
   obstacles.push({word, x:cvs.width+20, baseY, seed});
 }
 function updateObstacles(){
-  // спавн по времени (независимо от FPS)
-  updateObstacles.spawnAcc = (updateObstacles.spawnAcc||0) + dtFrames;
+  // ИНИЦИАЛЬНЫЙ СПАВН СРАЗУ
+  if (updateObstacles.spawnAcc == null) updateObstacles.spawnAcc = SPAWN_EVERY;
+
+  // спавн по времени
+  updateObstacles.spawnAcc += dtFrames;
   if (updateObstacles.spawnAcc >= SPAWN_EVERY){ spawnObstacle(); updateObstacles.spawnAcc -= SPAWN_EVERY; }
-  // движение со скоростью, нормированной к 60fps
+
+  // движение
   obstacles.forEach(o=> o.x -= OBSTACLE_SPEED * dtFrames);
-  // чистка
   if(obstacles.length && obstacles[0].x < -400) obstacles.shift();
 }
 function drawObstacles(){
@@ -187,16 +182,14 @@ function loop(ts){
 
   if (gameOver) return;
 
-  // фон
   ctx.clearRect(0,0,cvs.width,cvs.height);
   drawNotes();
 
-  // физика игрока (время-базовая)
+  // игрок (время-базовая физика)
   player.vy += player.gravity * dtFrames;
   if (player.vy > MAX_FALL) player.vy = MAX_FALL;
   player.y  += player.vy * dtFrames;
 
-  // границы
   if (player.y + player.h >= cvs.height){
     showGameOver("Ты скатился, все отписываются","");
     sfxHit(); return;
@@ -206,13 +199,12 @@ function loop(ts){
     sfxHit(); return;
   }
 
-  // сцена
   drawPlayer();
   updateObstacles();
   drawObstacles();
   checkCollision();
 
-  // счёт (по времени, как раньше ~30/сек)
+  // счёт
   frame++;
   scoreAcc += dtMs;
   while (scoreAcc >= SCORE_TICK_MS) { score++; scoreAcc -= SCORE_TICK_MS; }
@@ -230,7 +222,6 @@ function showGameOver(main, sub){
   titleEl.textContent = "Карьера окончена";
   line1El.textContent = main || "";
   line2El.textContent = sub  || "";
-  // клик/тап для рестарта
   const once = ()=>{ document.removeEventListener('pointerdown',once,true); document.removeEventListener('keydown',once,true); restart(); };
   document.addEventListener('pointerdown', once, true);
   document.addEventListener('keydown',     once, true);
@@ -251,9 +242,9 @@ function showWin(){
 let lastJumpAt=0;
 function doJump(e){
   const now = performance.now();
-  if (now - lastJumpAt < 120) return; // анти-двойной тап/клик
+  if (now - lastJumpAt < 120) return;
   lastJumpAt = now;
-  ac(); // разблок звука на мобилке
+  ac();
   if (!gameOver){
     player.vy = player.jump;
     sfxJump();
@@ -262,7 +253,6 @@ function doJump(e){
 document.addEventListener('keydown', (e)=>{
   if (e.code === 'Space' || e.code === 'ArrowUp') doJump(e);
 });
-// тапы напрямую на канвас
 cvs.addEventListener('pointerdown', (e)=>{ e.preventDefault(); doJump(e); }, {passive:false});
 cvs.addEventListener('touchstart',  (e)=>{ e.preventDefault(); doJump(e); }, {passive:false});
 
@@ -272,19 +262,23 @@ function restart(){
   score = 0;
   frame = 0;
   scoreAcc = 0;
+  // мгновенный первый спавн после рестарта
+  updateObstacles.spawnAcc = SPAWN_EVERY;
+
   player.x = 60; player.y = 250; player.vy = 0;
   player.gravity = P_GRAVITY; player.jump = P_JUMP;
   gameOver = false;
   cvs.classList.remove('blurred');
   overlay.classList.remove('show');
-  // важное: корректно перезапустить цикл
+
   lastTs = 0;
   try { cancelAnimationFrame(__rafId); } catch(e){}
   __rafId = requestAnimationFrame(loop);
 }
 
 /* ===================== старт ===================== */
-resizeCanvasToDisplaySize();
+// мгновенный первый спавн в самом начале
+updateObstacles.spawnAcc = SPAWN_EVERY;
 __rafId = requestAnimationFrame(loop);
 </script>
 </body>
