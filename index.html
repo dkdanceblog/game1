@@ -48,7 +48,7 @@ const IS_MOBILE = (window.matchMedia && window.matchMedia('(pointer: coarse)').m
   || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
 /* >>> ПРАВКИ: ускорили слова и чаще спавним на мобиле <<< */
-const OBSTACLE_SPEED = IS_MOBILE ? 2.0 : 3.0;   // было 1.7
+const OBSTACLE_SPEED = IS_MOBILE ? 3.5 : 4.5;   // было 1.7
 const SPAWN_EVERY    = IS_MOBILE ? 140 : 90;    // было 150
 /* ----------------------------------------------------------- */
 
