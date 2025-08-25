@@ -47,10 +47,10 @@
 const IS_MOBILE = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
   || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-/* ——— ТОЛЬКО ЭТО ПРАВИЛ ——— */
-const OBSTACLE_SPEED = IS_MOBILE ? 1.7 : 3.0;   // было 1.0 → стало быстрее
-const SPAWN_EVERY    = IS_MOBILE ? 150 : 90;    // было 180 → спавним чаще
-/* ———————————————————————— */
+/* >>> ПРАВКИ: ускорили слова и чаще спавним на мобиле <<< */
+const OBSTACLE_SPEED = IS_MOBILE ? 2.0 : 3.0;   // было 1.7
+const SPAWN_EVERY    = IS_MOBILE ? 140 : 90;    // было 150
+/* ----------------------------------------------------------- */
 
 const SCORE_TICK_MS  = IS_MOBILE ? 30  : 33;
 const WIN_SCORE = 5000;
@@ -140,7 +140,9 @@ function updateObstacles(){
   if(obstacles.length && obstacles[0].x < -400) obstacles.shift();
 }
 function drawObstacles(){
-  ctx.font="36px 'Russo One'";
+  /* >>> ПРАВКА: увеличили размер шрифта препятствий <<< */
+  ctx.font="42px 'Russo One'";   /* было 36px */
+  /* ---------------------------------------------------- */
   ctx.textAlign='left'; ctx.textBaseline='alphabetic';
   obstacles.forEach(o=>{
     const y = o.baseY + Math.sin((frame+o.seed)/15)*3;
@@ -277,8 +279,7 @@ function restart(){
 }
 
 /* ===================== старт ===================== */
-// мгновенный первый спавн в самом начале
-updateObstacles.spawnAcc = SPAWN_EVERY;
+updateObstacles.spawnAcc = SPAWN_EVERY; // спавним слово сразу
 __rafId = requestAnimationFrame(loop);
 </script>
 </body>
