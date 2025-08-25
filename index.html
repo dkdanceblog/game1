@@ -61,6 +61,14 @@
   </div>
 
 <script>
+
+// DEVICE-SPEED: разные скорости для десктопа и телефона
+const IS_MOBILE = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
+  || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+const OBSTACLE_SPEED = IS_MOBILE ? 2.0 : 3.0;   // скорость полёта слов (px/кадр)
+const SPAWN_EVERY    = IS_MOBILE ? 130  : 90;   // период спавна (в кадрах)
+
 // --- Audio (очень мягкие) ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playBeep(freq=440, duration=0.15, type="sine", vol=0.05){
@@ -194,7 +202,7 @@ function drawPlayer(){ ctx.font="56px Arial"; ctx.textAlign="left"; ctx.textBase
 function spawnObstacle(){ const idx=Math.floor(Math.random()*topicsNomin.length); const word=topicsNomin[idx];
   const baseY=Math.random()*(cvs.height-240)+100; const seed=Math.random()*1000;
   obstacles.push({ word, x:cvs.width+20, baseY, seed }); }
-function updateObstacles(){ if(frame%90===0) spawnObstacle(); obstacles.forEach(o=>o.x-=3);
+function updateObstacles(){ if(frame % SPAWN_EVERY === 0) spawnObstacle(); obstacles.forEach(o=>o.x-=OBSTACLE_SPEED);
   if(obstacles.length && obstacles[0].x<-400) obstacles.shift(); }
 function drawObstacles(){ ctx.font="36px 'Russo One'"; ctx.textAlign="left"; ctx.textBaseline="alphabetic";
   obstacles.forEach(o=>{ const y=o.baseY+Math.sin((frame+o.seed)/15)*3;
@@ -228,7 +236,7 @@ function loop(){ if(gameOver) return; ctx.clearRect(0,0,cvs.width,cvs.height); c
   ctx.restore();
 
   // счёт
-  frame++; if(frame%2===0){ score++; hudScore.textContent=score; if(score>=WIN_SCORE){ showWin(); return; } }
+  frame++; if(frame % SPAWN_EVERY === 0){ score++; hudScore.textContent=score; if(score>=WIN_SCORE){ showWin(); return; } }
 
   requestAnimationFrame(loop);
 }
