@@ -66,8 +66,8 @@
 const IS_MOBILE = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
   || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-const OBSTACLE_SPEED = IS_MOBILE ? 2.0 : 3.0;   // скорость полёта слов (px/кадр)
-const SPAWN_EVERY    = IS_MOBILE ? 130  : 90;   // период спавна (в кадрах)
+const OBSTACLE_SPEED = IS_MOBILE ? 1.0 : 3.0;   // скорость полёта слов (px/кадр)
+const SPAWN_EVERY    = IS_MOBILE ? 180  : 90;   // период спавна (в кадрах)
 
 // --- Audio (очень мягкие) ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
