@@ -345,5 +345,26 @@ loop();
 })();
 </script>
 
+
+<!-- MOBILE-ONLY PHYSICS TUNE (safe append): gentler fall + stronger jump -->
+<script>
+(function(){
+  const IS_MOBILE = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
+    || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  if (!IS_MOBILE) return;
+  function tune(){
+    try {
+      if (window.player) {
+        // make falling slower and jump stronger on touch devices
+        if (typeof player.gravity === 'number') player.gravity = Math.min(player.gravity, 0.38); // softer than desktop
+        if (typeof player.jump === 'number')    player.jump    = Math.min(player.jump, -15);    // stronger (more negative)
+      }
+    } catch(e){}
+  }
+  tune();
+  setTimeout(tune, 300); // in case player is created a bit later
+})();
+</script>
+
 </body>
 </html>
